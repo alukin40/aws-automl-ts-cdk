@@ -2,6 +2,12 @@
 
 > This is a CDK implementation demonstrates how to build custom model for Time Series Forecasting workflow using 
 
+> **Warning**
+> This application is not ready for production use. It was written for demonstration and educational purposes. No warranty is implied in this example.
+
+> **Note**
+> This architecture creates resources that have costs associated with them. Please see the [AWS Pricing](https://aws.amazon.com/pricing/) page for details and make sure to understand the costs before deploying this stack.
+
 ## Prerequisites
 
 AWS CDK v2 is required to deploy this application.
