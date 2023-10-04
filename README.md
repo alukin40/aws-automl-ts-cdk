@@ -1,6 +1,8 @@
 # Serverless Autopilot MLOps Pipeline for Time Series using CDK
 
-> This is a CDK implementation demonstrates how to build custom model for Time Series Forecasting workflow using 
+This is a CDK implementation demonstrates how to build custom model for Time Series Forecasting workflow using Amazon SageMaker Autopilot for Time Series data. The MLOps Pipeline is built on top of AWS Serverless services to minimize the operations overhead - you will work with Step Functions, Lambdas, Glue, SageMaker, S3.
+
+The solution is written in AWS CDK using TypeScript.
 
 > **Warning**
 > This application is not ready for production use. It was written for demonstration and educational purposes. No warranty is implied in this example.
