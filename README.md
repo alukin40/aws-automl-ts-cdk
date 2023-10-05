@@ -1,6 +1,6 @@
 # Serverless Autopilot MLOps Pipeline for Time Series using CDK
 
-This is a CDK implementation demonstrates how to build custom model for Time Series Forecasting workflow using Amazon SageMaker Autopilot for Time Series data. The MLOps Pipeline is built on top of AWS Serverless services to minimize the operations overhead - you will work with Step Functions, Lambdas, Glue, SageMaker, S3.
+This is a CDK implementation demonstrates how to build custom model for Time Series Forecasting workflow using Amazon SageMaker Autopilot for Time Series data. The MLOps is built on top of AWS Serverless services to minimize the operations overhead - you will work with Step Functions, Lambdas, Glue, SageMaker, S3.
 
 The solution is written in AWS CDK using TypeScript.
 
@@ -37,7 +37,7 @@ The pipeline consist of the following steps:
 Implemented in Lambda Function which is triggered by S3 Bucket when a new __.zip__ file is uploaded into __/raw__ in a S3 Bucket created by CDK. Lambda Function triggers the Step Function pipeline.
 
 ### Data Preprocessing
-Implemented in Glue Python Job. Performs data operations defined in python scripts. The current code does nothing but printing out dataset files, but you can add your own preprocessing logics using pandas, NumPy, sklearn, etc.
+Implemented in Glue Python Job. Performs data operations defined in python scripts. The script provided does merge of 3 input files (`TTS.csv`, `RTS.csv`, `metadata.csv`) into 1 input file which SageMaker Autopilot for Time Series expects. You can extend this script as per your needs.
 
 ### Autopilot Training Creation
 Implemented in Lambda Function. Creates Amazon SageMaker Autopilot Training job for Time Series data using a newest version of SageMaker API [CreateAutoMLJobV2](https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateAutoMLJobV2.html), as there no direct intergation from Step Functions for this API.
@@ -62,26 +62,43 @@ See this [link](https://docs.aws.amazon.com/sagemaker/latest/dg/timeseries-forec
 
 For those who want to execute the pipeline before preparing your own dataset, sample dataset is included in this project. Please see __sample-data/data.zip__.
 
-> In __sample-data/data.zip__, `TTS.csv` contains monthly sales history of instruments in Amazon Autopilot Target Time Series format. 
+> In __sample-data/data.zip__, `TTS.csv` contains weekly products demand history. `RTS.csv` contains related time series data with additional fields for products. `metadata.csv` contains metadata for products.
 
 When you prepare your own dataset, be sure to match the directory structure of the dataset file __data.zip__. The directory structure should look like below.
 
 ```bash
 data.zip
 │────TTS.csv # mandatory
+│────RTS.csv # mandatory
+│────metadata.csv # mandatory
 ```
 
-> Please note that the names of csv files should be `TTS.csv`.
+> Please note that the names of csv files should be `TTS.csv`, `RTS.csv`, `metadata.csv`.
 
 > Be aware, that if you are doing simple .zip of the folder on MacOS via Finder app, then it adds additional files into the .zip, so create this .zip file and then remove these files by commands in terminal like `zip -d data.zip __MACOSX .DS_Store`.
 
+### AutoML Problem Configuration
+
+SageMaker Autopilot requires a Problem Configuration to be provided in a specific format. Problem Configuration must be problem specific and must be available in Resource Bucket __automl_problem_config.json__ before you initiate the MLOps Pipeline by uploading __data.zip__ into Resource Bucket in __raw/__ folder.
+
+As your data might be very different from provided synthetic data, the solution is prepared for being reused with different datasets. For that, you need to review/change the configuration file provided in __sample-data__ folder.
+
+> **Warning**
+> You must upload `automl_problem_config.json` file to the Resource S3 Bucket created by CDK with no prefix __BEFORE__ you will upload `data.zip` file into `raw/`, so the process won't fail as there will be missing Problem Configuration for SageMaker Autopilot for Time Series.
+> Example of `automl_problem_config.json` file is available in `sample-data` folder in this solution.
 
 ### Upload to Launch
 
 Finally, you are ready to launch the pipeline. After you deploy this pipeline,
 you will see an S3 bucket named `automl-ts-mlops-pipeline-resource-bucket-{YOUR-12DIGIT-AWS-ACCOUNT-ID}`. All you have to do now is to upload files prepared from the previous steps. 
 
-You have to upload your on data.zip file to __raw/__ directory in the same bucket.
+First - upload your `automl_problem_config.json` file the newly created S3 Bucket (Resource Bucket) with no prefix.
+
+```bash
+aws s3 cp automl_problem_config.json s3://automl-ts-mlops-pipeline-resource-bucket-{YOUR-12DIGIT-AWS-ACCOUNT-ID}
+```
+
+Now, You have to upload your on data.zip file to __raw/__ directory in the same bucket.
 
 ```bash
 aws s3 cp data.zip s3://automl-ts-mlops-pipeline-resource-bucket-{YOUR-12DIGIT-AWS-ACCOUNT-ID}/raw
@@ -102,6 +119,7 @@ raw/                        # Where you uploaded the raw dataset
 input/                      # Where preprocessed csv file is stored
 autopilot-output/           # Where experiment models artifacts created by SageMaker Autopilot are stored
 output-forecasted-data/     # Where final csv file with predictions using AIML model is stored
+automl_problem_config.json  # Sagemaker Autopilot Problem Configuration file 
 ```
 
 

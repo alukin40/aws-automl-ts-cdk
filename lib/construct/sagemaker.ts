@@ -1,13 +1,13 @@
 import {Construct} from 'constructs';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as sfn_tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 
 export interface SageMakerConstructProps {
     taskName: string,
-    sourceBucketName: string,
-    destinationBucketName: string,
+    resourceBucket: s3.Bucket,
     inputModelName: string,
     sagemakerRoleArn: string,
     defaultArguments?: {
@@ -24,6 +24,8 @@ export class SageMakerConstruct extends Construct {
     
     constructor(scope: Construct, id: string, props: SageMakerConstructProps) {
         super(scope, id);
+        
+        const resourceBucketName = props.resourceBucket.bucketName;
         
         // Take an existing role for SageMaker
         const smRole = iam.Role.fromRoleArn(this, 'SageMakerExeuctionRole', props.sagemakerRoleArn);
@@ -48,18 +50,19 @@ export class SageMakerConstruct extends Construct {
           transformInput: {
             transformDataSource: {
               s3DataSource: {
-                s3Uri: `s3://${props.sourceBucketName}/input/TTS.csv`,
+                s3Uri: `s3://${resourceBucketName}/input/training_data.csv`,
                 s3DataType: sfn_tasks.S3DataType.S3_PREFIX,
               }
             }
           },
           transformOutput: {
-            s3OutputPath: `s3://${props.destinationBucketName}/output-forecasted-data`,
+            s3OutputPath: `s3://${resourceBucketName}/output-forecasted-data`,
           },
           transformResources: {
             instanceCount: 1,
             instanceType: ec2.InstanceType.of(ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE),
-          }
+          },
+          resultPath: '$.createdJob'
         });
         
     }

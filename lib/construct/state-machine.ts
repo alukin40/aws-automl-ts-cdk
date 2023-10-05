@@ -7,7 +7,7 @@ import * as cdk from 'aws-cdk-lib';
 import { GlueConstruct } from "./glue";
 import { TriggerConstruct } from './trigger';
 import { LambdaConstruct } from './lambda';
-import { SageMakerConstruct } from './create-model';
+import { SageMakerConstruct } from './sagemaker';
 
 export interface StateMachineProps {
   resourceBucket: s3.Bucket;
@@ -20,6 +20,12 @@ export class StateMachine extends Construct {
     super(scope, id);
 
     const resourceBucket = props.resourceBucket;
+    
+    // Define the policy statement allows Full Access to specified S3 bucket
+    const s3BucketFullAccessPolicy = new iam.PolicyStatement({
+      actions: ['s3:*'],
+      resources: [resourceBucket.bucketArn, `${resourceBucket.bucketArn}/*`],
+    });
 
     // IAM Role to pass to SageMaker Autopilot
     const sagemakerExecutionRole = new iam.Role(
@@ -29,11 +35,16 @@ export class StateMachine extends Construct {
         assumedBy: new iam.ServicePrincipal("sagemaker.amazonaws.com"),
         roleName: "AutoML-TS-MLOps-Pipeline-Sagemaker-Role",
         managedPolicies: [
-          {managedPolicyArn: "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"},
-          {managedPolicyArn: "arn:aws:iam::aws:policy/AmazonS3FullAccess"}
+          {managedPolicyArn: "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"}
         ],
+        inlinePolicies: {
+          's3BucketFullAccess': new iam.PolicyDocument({
+            statements: [s3BucketFullAccessPolicy]
+          })
+        },
       },
     );
+    
     
     // IAM Role for State Machine
     const stateMachineExecutionRole = new iam.Role(this, 'AutoML-TS-MLOps-Pipeline-StateMachine-Execution-Role', {
@@ -49,6 +60,7 @@ export class StateMachine extends Construct {
     const preprocess = new GlueConstruct(this, "AutoML-TS-MLOps-Pipeline-Data-Preprocess-Glue", {
       taskName: "AutoML-TS-MLOps-Pipeline-Data-Preprocess-Glue",
       pythonFilePath: "glue/preprocess.py",
+      resourceBucket: resourceBucket,
       defaultArguments: {
         "--bucket": props.resourceBucket.bucketName,
         "--fileuri": "raw/data.zip",
@@ -60,6 +72,7 @@ export class StateMachine extends Construct {
        taskName: 'AutoML-TS-MLOps-Pipeline-Create-Autopilot-Job',
        lambdaCodePath: 'lambda/create-autopilot-job',
        timeout: cdk.Duration.seconds(30),
+       resourceBucket: resourceBucket,
        environment: {
            SAGEMAKER_ROLE_ARN: sagemakerExecutionRole.roleArn,
            RESOURCE_BUCKET: props.resourceBucket.bucketName
@@ -67,19 +80,36 @@ export class StateMachine extends Construct {
     });
     
     // Check Autopilot Job Status
-    const checkJobStatus = new LambdaConstruct(this, 'AutoML-TS-MLOps-Pipeline-Autopilot-Job-Status-Check', {
+    const checkAutopilotJobStatus = new LambdaConstruct(this, 'AutoML-TS-MLOps-Pipeline-Autopilot-Job-Status-Check', {
         taskName: 'AutoML-TS-MLOps-Pipeline-Autopilot-Job-Status-Check',
         lambdaCodePath: 'lambda/check-autopilot-job',
         timeout: cdk.Duration.seconds(30),
+        resourceBucket: resourceBucket,
         environment: {
             SAGEMAKER_ROLE_ARN: sagemakerExecutionRole.roleArn
         }
-    })
+    });
+    
+    // Check Transform Job Status
+    const checkTransformationJobStatus = new LambdaConstruct(this, 'AutoML-TS-MLOps-Pipeline-Transformation-Job-Status-Check', {
+        taskName: 'AutoML-TS-MLOps-Pipeline-Transform-Job-Check',
+        lambdaCodePath: 'lambda/check-transformation-job',
+        timeout: cdk.Duration.seconds(30),
+        resourceBucket: resourceBucket,
+        environment: {
+            SAGEMAKER_ROLE_ARN: sagemakerExecutionRole.roleArn
+        }
+    });
     
     // Waiting 5m before checking Autopilot Job Status
-    const wait5min = new sfn.Wait(this, 'AutoML-TS-MLOps-Pipeline-Wait5Min', {
-        time: sfn.WaitTime.duration(cdk.Duration.minutes(5))
-    })
+    const wait5minAfterTraining = new sfn.Wait(this, 'AutoML-TS-MLOps-Pipeline-Wait5Min-Training', {
+        time: sfn.WaitTime.duration(cdk.Duration.seconds(30))
+    });
+    
+    // Waiting 5m before checking Autopilot Job Status
+    const wait5minAfterJob = new sfn.Wait(this, 'AutoML-TS-MLOps-Pipeline-Wait5Min-Job', {
+        time: sfn.WaitTime.duration(cdk.Duration.seconds(30))
+    });
     
     // Finish State Machine if job failed
     const jobFailed = new sfn.Fail(this, 'AutoML-TS-MLOps-Pipeline-Job-Failed', {
@@ -93,8 +123,7 @@ export class StateMachine extends Construct {
     // Create a model from the Best trained model from AutoML
     const bestModel = new SageMakerConstruct(this, 'AutoML-TS-MLOps-Pipeline-Best-Model', {
       taskName: 'AutoML-TS-MLOps-Pipeline-Best-Model',
-      sourceBucketName: props.resourceBucket.bucketName,
-      destinationBucketName: props.resourceBucket.bucketName,
+      resourceBucket: resourceBucket,
       inputModelName: '$.BestCandidate.InferenceContainer.CandidateName',
       sagemakerRoleArn: sagemakerExecutionRole.roleArn
     });
@@ -103,13 +132,19 @@ export class StateMachine extends Construct {
     // State Machine Definition
     const definition = preprocess.task
                         .next(createAutopilotTrainingJob.task)
-                        .next(wait5min)
-                        .next(checkJobStatus.task)
-                        .next(new sfn.Choice(this, 'Job Complete?')
+                        .next(wait5minAfterTraining)
+                        .next(checkAutopilotJobStatus.task)
+                        .next(new sfn.Choice(this, 'AutoML Job Complete?')
                             // Look at the Autopilot Job Status field
-                            .when(sfn.Condition.stringEquals('$.AutoMLJobStatus', 'InProgress'), wait5min)
+                            .when(sfn.Condition.stringEquals('$.AutoMLJobStatus', 'InProgress'), wait5minAfterTraining)
                             .when(sfn.Condition.stringEquals('$.AutoMLJobStatus', 'Completed'), bestModel.createModelTask
                               .next(bestModel.createTransformJob)
+                              .next(wait5minAfterJob)
+                              .next(checkTransformationJobStatus.task)
+                              .next(new sfn.Choice(this, 'Transformation Job Complete?')
+                                .when(sfn.Condition.stringEquals('$.TransformJobStatus', 'InProgress'), wait5minAfterJob)
+                                .when(sfn.Condition.stringEquals('$.TransformJobStatus', 'Completed'), success)
+                                .otherwise(jobFailed))
                             )
                             .otherwise(jobFailed));
     

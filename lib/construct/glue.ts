@@ -1,5 +1,6 @@
 import {Construct} from 'constructs';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as sfn_tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 
@@ -8,6 +9,7 @@ import * as glue from "@aws-cdk/aws-glue-alpha";
 export interface GlueConstructProps {
     taskName: string,
     pythonFilePath: string,
+    resourceBucket: s3.Bucket,
     defaultArguments?: {
         [key:string]: string;
     },
@@ -23,14 +25,26 @@ export class GlueConstruct extends Construct {
     constructor(scope: Construct, id: string, props: GlueConstructProps) {
         super(scope, id);
         
+        const resourceBucketArn = props.resourceBucket.bucketArn;
+        
+        // Define the policy statement allows Full Access to specified S3 bucket
+        const s3BucketFullAccessPolicy = new iam.PolicyStatement({
+          actions: ['s3:*'],
+          resources: [resourceBucketArn, `${resourceBucketArn}/*`],
+        });
+        
         // IAM Role
         this.role = new iam.Role(this, `${props.taskName}-Role`, {
             assumedBy: new iam.ServicePrincipal('glue.amazonaws.com'),
             roleName: `${props.taskName}-Role`,
             managedPolicies: [
-                {managedPolicyArn: 'arn:aws:iam::aws:policy/AmazonS3FullAccess'},
                 {managedPolicyArn: 'arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole'},
-            ]
+            ],
+            inlinePolicies: {
+                's3BucketReadOnly': new iam.PolicyDocument({
+                    statements: [s3BucketFullAccessPolicy]
+                })
+            }
         });
         
         // Glue Python Job
@@ -42,8 +56,6 @@ export class GlueConstruct extends Construct {
             }),
             role: this.role,
             jobName: props.taskName,
-            //workerType: glue.WorkerType.G_1X,
-            //workerCount: 1,
             defaultArguments: props.defaultArguments
         });
         

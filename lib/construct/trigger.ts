@@ -20,17 +20,40 @@ export class TriggerConstruct extends Construct {
   constructor(scope: Construct, id: string, props: TriggerConstructProps) {
     super(scope, id);
 
+    const resourceBucketArn = props.resourceBucket.bucketArn;
+    
+    // Define the policy statement allows Read Access to specified S3 bucket
+    const s3BucketReadAccessPolicy = new iam.PolicyStatement({
+      actions: [
+        's3:GetObject',
+        's3:ListBucket',
+      ],
+      resources: [resourceBucketArn, `${resourceBucketArn}/*`],
+    });
+    
+    // Define a policy statement that allows starting executions of the specific Step Function
+    const startSfnExecutionPolicy = new iam.PolicyStatement({
+      actions: ['states:StartExecution'],
+      resources: [props.stateMachine.stateMachineArn],
+    });
+
     // IAM Role
     this.role = new iam.Role(this, "AutoML-TS-MLOps-Pipeline-Train-Trigger-Role", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
       roleName: "AutoML-TS-MLOps-Pipeline-Train-Trigger-Role",
       managedPolicies: [
-        {managedPolicyArn: "arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess"},
         {managedPolicyArn: "arn:aws:iam::aws:policy/CloudWatchFullAccess" },
-        {managedPolicyArn: "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess" },
         {managedPolicyArn: "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"},
         {managedPolicyArn: "arn:aws:iam::aws:policy/service-role/AWSLambdaRole"},
       ],
+      inlinePolicies: {
+        's3BucketReadOnly': new iam.PolicyDocument({
+            statements: [s3BucketReadAccessPolicy]
+        }),
+        'sfnStartExecution': new iam.PolicyDocument({
+            statements: [startSfnExecutionPolicy]
+        })
+      }
     });
     
     // Define Lambda Function for Trigger
