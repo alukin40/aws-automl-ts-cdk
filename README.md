@@ -18,6 +18,7 @@ See [Installation Guide](https://docs.aws.amazon.com/cdk/latest/guide/work-with-
 Once complete with the previous step, run below command on the root of this project to deploy the pipeline.
 
 ```bash
+npm install
 cdk deploy AutopilotMlopsStack
 ```
 
