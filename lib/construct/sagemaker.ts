@@ -1,4 +1,5 @@
 import {Construct} from 'constructs';
+import { Size } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
@@ -60,9 +61,10 @@ export class SageMakerConstruct extends Construct {
           },
           transformResources: {
             instanceCount: 1,
-            instanceType: ec2.InstanceType.of(ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE),
+            instanceType: ec2.InstanceType.of(ec2.InstanceClass.C5, ec2.InstanceSize.XLARGE2),
           },
-          resultPath: '$.createdJob'
+          resultPath: '$.createdJob',
+          maxPayload: Size.mebibytes(50)
         });
         
     }
