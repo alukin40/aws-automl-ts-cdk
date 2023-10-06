@@ -28,7 +28,7 @@ If successfully deployed, we are ready to launch 🚀🚀🚀
 
 ## Solutions Architecture
 
-![architecture](asset/automl-ts-mlops-pipelien-architecture.png)
+![architecture](asset/automl-ts-mlops-pipeline-architecture.png)
 
 This package contains a CDK implementation of a MLOps Pipeline for Amazon Autopilot for Time Series data. The pipeline automatically performs Amazon Autopilot operations and relevant operations. Basically, each of the operations are either implemente with AWS Lambda, AWS Glue, or direct call of SageMaker from Step Functions, and the entire operations are orchestrated by AWS Step Functions.
 
