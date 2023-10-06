@@ -51,6 +51,9 @@ Implemented as direct call of SageMaker APIs from Step Functions task to create 
 ### Batch Transform Job
 Implemented as direct call of SageMaker APIs from Step Functions task to create a Batch Transform Job using the model defined in "Create Model" step. The results are going to be stored in the same Resource Bucket created by CDK, but in the folder __TransformJobOutputPath/__.
 
+### Batch Transform Job Check
+Implemented as a Lambda with Step Functions loop process. Step Function does a loop and each 5 minutes runs Lambda Function which checks the status of created Batch Transform Job from previous step. Lambda is used as there is no direct integration from Step Functions tasks with SageMaker API [DescribeTransformJob](https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeTransformJob.html).
+
 ## How to Run
 
 This section explains how to trigger the pipeline to run Amazon Autopilot pipeline from end to end. Follow the instructions in order.
