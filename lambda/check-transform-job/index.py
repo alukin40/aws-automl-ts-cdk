@@ -7,7 +7,7 @@ sagemaker = boto3.client('sagemaker')
 
 def handler(event, context):
     # If TransformJobName is known, take it, else take a Best Candidate Name as they are the same.
-    job_name = event['TransformJobName'] if 'TransformJobName' in event else event['BestCandidate']['CandidateName']
+    job_name = event['TransformJobName'] if 'TransformJobName' in event else event['BestCandidate']['CandidateName'] + '-job'
     
     
     full_response = sagemaker.describe_transform_job(

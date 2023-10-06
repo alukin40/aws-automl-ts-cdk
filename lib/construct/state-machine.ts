@@ -93,7 +93,7 @@ export class StateMachine extends Construct {
     // Check Transform Job Status
     const checkTransformationJobStatus = new LambdaConstruct(this, 'AutoML-TS-MLOps-Pipeline-Transformation-Job-Status-Check', {
         taskName: 'AutoML-TS-MLOps-Pipeline-Transform-Job-Check',
-        lambdaCodePath: 'lambda/check-transformation-job',
+        lambdaCodePath: 'lambda/check-transform-job',
         timeout: cdk.Duration.seconds(30),
         resourceBucket: resourceBucket,
         environment: {
@@ -124,8 +124,19 @@ export class StateMachine extends Construct {
     const bestModel = new SageMakerConstruct(this, 'AutoML-TS-MLOps-Pipeline-Best-Model', {
       taskName: 'AutoML-TS-MLOps-Pipeline-Best-Model',
       resourceBucket: resourceBucket,
-      inputModelName: '$.BestCandidate.InferenceContainer.CandidateName',
       sagemakerRoleArn: sagemakerExecutionRole.roleArn
+    });
+    
+    // Create Autopilot TS Training Job
+    const createTransformJob = new LambdaConstruct(this, 'AutoML-TS-MLOps-Pipeline-Create-Transform-Job', {
+       taskName: 'AutoML-TS-MLOps-Pipeline-Create-Transform-Job',
+       lambdaCodePath: 'lambda/create-transform-job',
+       timeout: cdk.Duration.seconds(30),
+       resourceBucket: resourceBucket,
+       environment: {
+           SAGEMAKER_ROLE_ARN: sagemakerExecutionRole.roleArn,
+           RESOURCE_BUCKET: props.resourceBucket.bucketName
+       }
     });
     
     
@@ -138,7 +149,7 @@ export class StateMachine extends Construct {
                             // Look at the Autopilot Job Status field
                             .when(sfn.Condition.stringEquals('$.AutoMLJobStatus', 'InProgress'), wait5minAfterTraining)
                             .when(sfn.Condition.stringEquals('$.AutoMLJobStatus', 'Completed'), bestModel.createModelTask
-                              .next(bestModel.createTransformJob)
+                              .next(createTransformJob.task)
                               .next(wait5minAfterJob)
                               .next(checkTransformationJobStatus.task)
                               .next(new sfn.Choice(this, 'Transformation Job Complete?')
