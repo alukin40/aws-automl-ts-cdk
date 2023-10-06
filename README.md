@@ -50,7 +50,8 @@ Implemented in Lambda Function with Step Functions loop process. Step Functions 
 Implemented as direct call of SageMaker APIs from Step Functions task to create an AI Model using the best performing trained model from SageMaker Autopilot Training.
 
 ### Batch Transform Job
-Implemented as direct call of SageMaker APIs from Step Functions task to create a Batch Transform Job using the model defined in "Create Model" step. The results are going to be stored in the same Resource Bucket created by CDK, but in the folder __TransformJobOutputPath/__.
+Implemented in Lambda Function. Using Dynamic Config file for Batch Transform Job, so it can be adjusted on the fly based on training data. Lambda Function calls SageMaker API [CreateTransformJob](https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateTransformJob.html) using config file provided in S3 bucket.
+Sample Config file is provided in __sample-data/batch_transform_job_config.json__ which you can re-use and adjust to your needs.
 
 ### Batch Transform Job Check
 Implemented as a Lambda with Step Functions loop process. Step Function does a loop and each 5 minutes runs Lambda Function which checks the status of created Batch Transform Job from previous step. Lambda is used as there is no direct integration from Step Functions tasks with SageMaker API [DescribeTransformJob](https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeTransformJob.html).
@@ -91,6 +92,10 @@ As your data might be very different from provided synthetic data, the solution 
 > You must upload `automl_problem_config.json` file to the Resource S3 Bucket created by CDK with no prefix __BEFORE__ you will upload `data.zip` file into `raw/`, so the process won't fail as there will be missing Problem Configuration for SageMaker Autopilot for Time Series.
 > Example of `automl_problem_config.json` file is available in `sample-data` folder in this solution.
 
+> **Warning**
+> You must upload `batch_transform_job_config.json` file to the Resource S3 Bucket created by CDK with no prefix __BEFORE__ you will upload `data.zip` file into `raw/`, so the process won't fail as there will be missing Batch Transform Job Configuration used for SageMaker API.
+> Example of `batch_transform_job_config.json` file is available in `sample-data` folder in this solution.
+
 ### Upload to Launch
 
 Finally, you are ready to launch the pipeline. After you deploy this pipeline,
@@ -100,6 +105,12 @@ First - upload your `automl_problem_config.json` file the newly created S3 Bucke
 
 ```bash
 aws s3 cp automl_problem_config.json s3://automl-ts-mlops-pipeline-resource-bucket-{YOUR-12DIGIT-AWS-ACCOUNT-ID}
+```
+
+Then - upload your `batch_transform_job_config.json` to the same S3 Bucket (Resource Bucket) with no prefix as well.
+
+```bash
+aws s3 cp batch_transform_job_config.json s3://automl-ts-mlops-pipeline-resource-bucket-{YOUR-12DIGIT-AWS-ACCOUNT-ID}
 ```
 
 Now, You have to upload your on data.zip file to __raw/__ directory in the same bucket.
@@ -119,11 +130,12 @@ Navigate to the StepFunctions console to monitor the excecution. You will see th
 When the steps are completed, the __Resource Bucket__ will have the following structure:
 
 ```bash
-raw/                        # Where you uploaded the raw dataset
-input/                      # Where preprocessed csv file is stored
-autopilot-output/           # Where experiment models artifacts created by SageMaker Autopilot are stored
-output-forecasted-data/     # Where final csv file with predictions using AIML model is stored
-automl_problem_config.json  # Sagemaker Autopilot Problem Configuration file 
+raw/                                # Where you uploaded the raw dataset
+input/                              # Where preprocessed csv file is stored
+autopilot-output/                   # Where experiment models artifacts created by SageMaker Autopilot are stored
+output-forecasted-data/             # Where final csv file with predictions using AIML model is stored
+automl_problem_config.json          # Sagemaker Autopilot Problem Configuration file 
+batch_transform_job_config.json     # Sagemaker Batch Transform Job Configuration file 
 ```
 
 

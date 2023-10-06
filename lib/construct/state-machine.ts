@@ -103,22 +103,13 @@ export class StateMachine extends Construct {
     
     // Waiting 5m before checking Autopilot Job Status
     const wait5minAfterTraining = new sfn.Wait(this, 'AutoML-TS-MLOps-Pipeline-Wait5Min-Training', {
-        time: sfn.WaitTime.duration(cdk.Duration.seconds(30))
+        time: sfn.WaitTime.duration(cdk.Duration.minutes(5))
     });
     
     // Waiting 5m before checking Autopilot Job Status
     const wait5minAfterJob = new sfn.Wait(this, 'AutoML-TS-MLOps-Pipeline-Wait5Min-Job', {
-        time: sfn.WaitTime.duration(cdk.Duration.seconds(30))
+        time: sfn.WaitTime.duration(cdk.Duration.minutes(5))
     });
-    
-    // Finish State Machine if job failed
-    const jobFailed = new sfn.Fail(this, 'AutoML-TS-MLOps-Pipeline-Job-Failed', {
-      cause: 'Autopilot MLOps Pipeline Job Failed',
-      error: 'Autopilot Train Job returned FAILED',
-    });
-    
-    // Temporary, for testing only
-    const success = new sfn.Succeed(this, 'We did it!');
     
     // Create a model from the Best trained model from AutoML
     const bestModel = new SageMakerConstruct(this, 'AutoML-TS-MLOps-Pipeline-Best-Model', {
@@ -138,6 +129,14 @@ export class StateMachine extends Construct {
        }
     });
     
+    // Finish State Machine if job failed
+    const jobFailed = new sfn.Fail(this, 'AutoML-TS-MLOps-Pipeline-Job-Failed', {
+      cause: 'Autopilot MLOps Pipeline Job Failed',
+      error: 'Autopilot Train Job returned FAILED',
+    });
+    
+    // Final Success State
+    const success = new sfn.Succeed(this, 'We did it!');
     
     // State Machine Definition
     const definition = preprocess.task
