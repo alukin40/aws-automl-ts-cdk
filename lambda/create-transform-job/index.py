@@ -10,7 +10,6 @@ s3 = boto3.client('s3')
 def handler(event, context):
     print(event)
     
-    sagemaker_role = os.environ['SAGEMAKER_ROLE_ARN']
     resource_bucket = os.environ['RESOURCE_BUCKET']
     transform_model = event['BestCandidate']['CandidateName']
     transform_job_name = transform_model + '-job'

@@ -134,7 +134,6 @@ export class StateMachine extends Construct {
        timeout: cdk.Duration.seconds(30),
        resourceBucket: resourceBucket,
        environment: {
-           SAGEMAKER_ROLE_ARN: sagemakerExecutionRole.roleArn,
            RESOURCE_BUCKET: props.resourceBucket.bucketName
        }
     });
