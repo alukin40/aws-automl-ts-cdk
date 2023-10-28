@@ -13,7 +13,7 @@ def handler(event, context):
     resource_bucket = os.environ['RESOURCE_BUCKET']
     transform_model = event['BestCandidate']['CandidateName']
     transform_job_name = transform_model + '-job'
-    transform_job_config_file_key = 'batch_transform_job_config.json'
+    transform_job_config_file_key = 'config/batch_transform_job_config.json'
     
     # Get Transform Job Config file from S3
     transform_job_config_s3 = s3.get_object(Bucket=resource_bucket, Key=transform_job_config_file_key)
@@ -36,6 +36,7 @@ def handler(event, context):
     max_payload_mb = transform_job_config['MaxPayloadInMB']
     
     # Start the SageMaker Batch Transform Job
+    testJobName = 'alukin-test-271023-3'
     sm_response = sagemaker.create_transform_job(
         TransformJobName=transform_job_name, 
         ModelName=transform_model,

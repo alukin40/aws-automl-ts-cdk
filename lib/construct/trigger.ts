@@ -4,6 +4,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as lambda_event_sources from "aws-cdk-lib/aws-lambda-event-sources";
+import * as fs from 'fs';
 
 export interface TriggerConstructProps {
   stateMachine: sfn.StateMachine;
@@ -22,6 +23,10 @@ export class TriggerConstruct extends Construct {
 
     const resourceBucketArn = props.resourceBucket.bucketArn;
     
+    const configRaw = fs.readFileSync('cdk-config/cdk-config.json', 'utf8');
+    const config = JSON.parse(configRaw);
+    const baseConstructName = config.baseConstructName
+    
     // Define the policy statement allows Read Access to specified S3 bucket
     const s3BucketReadAccessPolicy = new iam.PolicyStatement({
       actions: [
@@ -38,9 +43,9 @@ export class TriggerConstruct extends Construct {
     });
 
     // IAM Role
-    this.role = new iam.Role(this, "AutoML-TS-MLOps-Pipeline-Train-Trigger-Role", {
+    this.role = new iam.Role(this, `${baseConstructName}-Train-Trigger-Role`, {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
-      roleName: "AutoML-TS-MLOps-Pipeline-Train-Trigger-Role",
+      roleName: `${baseConstructName}-Train-Trigger-Role`,
       managedPolicies: [
         {managedPolicyArn: "arn:aws:iam::aws:policy/CloudWatchFullAccess" },
         {managedPolicyArn: "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"},
@@ -57,10 +62,10 @@ export class TriggerConstruct extends Construct {
     });
     
     // Define Lambda Function for Trigger
-    this.lambda = new lambda.Function(this, 'AutoML-TS-MLOps-Pipeline-Upload-Lambda', {
+    this.lambda = new lambda.Function(this, `${baseConstructName}-Upload-Lambda`, {
         runtime: lambda.Runtime.PYTHON_3_11,
         role: this.role,
-        functionName: 'AutoML-TS-MLOps-Pipeline-Upload-Lambda',
+        functionName: `${baseConstructName}-Upload-Lambda`,
         code: lambda.Code.fromAsset('lambda/trigger'),
         handler: 'index.handler',
         environment: {

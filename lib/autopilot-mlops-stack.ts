@@ -1,5 +1,6 @@
 import { Duration, Stack, StackProps, RemovalPolicy } from "aws-cdk-lib";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as fs from 'fs';
 
 import { Construct } from "constructs";
 import { StateMachine } from "./construct/state-machine";
@@ -7,12 +8,15 @@ import { StateMachine } from "./construct/state-machine";
 export class AutopilotMlopsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+    
+    const configRaw = fs.readFileSync('cdk-config/cdk-config.json', 'utf8');
+    const config = JSON.parse(configRaw);
 
     const resourceBucket = new s3.Bucket(
       this,
-      "AutoML-TS-MLOps-Pipeline-Bucket",
+      `${config.baseConstructName}-Bucket`,
       {
-        bucketName: `automl-ts-mlops-pipeline-resource-bucket-${
+        bucketName: `${config.baseResourceBucket}-${
           Stack.of(this).account
         }`,
         versioned: false,
@@ -23,7 +27,7 @@ export class AutopilotMlopsStack extends Stack {
 
     const stateMachine = new StateMachine(
       this,
-      "AutoML-TS-MLOps-Pipeline-StateMachine",
+      `${config.baseConstructName}-StateMachine`,
       {
         resourceBucket: resourceBucket,
       },

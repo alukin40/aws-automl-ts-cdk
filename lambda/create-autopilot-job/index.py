@@ -18,7 +18,7 @@ def handler(event, context):
     job_name = 'automl-job-'+ts  #os.environ['JOB_NAME']
     
     csv_s3_uri = f's3://{resource_bucket}/input/training_data.csv'
-    automl_config_file_key = 'automl_problem_config.json'
+    automl_config_file_key = 'config/automl_problem_config.json'
     
     
     # Define input data config for SageMaker
@@ -53,6 +53,12 @@ def handler(event, context):
         RoleArn=sagemaker_role,
         AutoMLProblemTypeConfig=automl_problem_config
     )
+    # response = {
+    #     "AutoMLJobResponse": {
+    #         "AutoMLJobArn": "arn:aws:sagemaker:eu-west-1:912713455521:automl-job/automl-job-20231006T085134"
+    #     }
+    # }
+    # job_name = 'automl-job-20231006T085134'
 
     return {
         'AutoMLJobResponse': response,

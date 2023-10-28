@@ -89,11 +89,11 @@ SageMaker Autopilot requires a Problem Configuration to be provided in a specifi
 As your data might be very different from provided synthetic data, the solution is prepared for being reused with different datasets. For that, you need to review/change the configuration file provided in __sample-data__ folder.
 
 > **Warning**
-> You must upload `automl_problem_config.json` file to the Resource S3 Bucket created by CDK with no prefix __BEFORE__ you will upload `data.zip` file into `raw/`, so the process won't fail as there will be missing Problem Configuration for SageMaker Autopilot for Time Series.
+> You must upload `automl_problem_config.json` file to the Resource S3 Bucket created by CDK in `config/` folder __BEFORE__ you will upload `data.zip` file into `raw/`, so the process won't fail as there will be missing Problem Configuration for SageMaker Autopilot for Time Series.
 > Example of `automl_problem_config.json` file is available in `sample-data` folder in this solution.
 
 > **Warning**
-> You must upload `batch_transform_job_config.json` file to the Resource S3 Bucket created by CDK with no prefix __BEFORE__ you will upload `data.zip` file into `raw/`, so the process won't fail as there will be missing Batch Transform Job Configuration used for SageMaker API.
+> You must upload `batch_transform_job_config.json` file to the Resource S3 Bucket created by CDK in `config/` folder __BEFORE__ you will upload `data.zip` file into `raw/`, so the process won't fail as there will be missing Batch Transform Job Configuration used for SageMaker API.
 > Example of `batch_transform_job_config.json` file is available in `sample-data` folder in this solution.
 
 ### Upload to Launch
@@ -104,19 +104,19 @@ you will see an S3 bucket named `automl-ts-mlops-pipeline-resource-bucket-{YOUR-
 First - upload your `automl_problem_config.json` file the newly created S3 Bucket (Resource Bucket) with no prefix.
 
 ```bash
-aws s3 cp automl_problem_config.json s3://automl-ts-mlops-pipeline-resource-bucket-{YOUR-12DIGIT-AWS-ACCOUNT-ID}
+aws s3 cp automl_problem_config.json s3://automl-ts-mlops-pipeline-resource-bucket-{YOUR-12DIGIT-AWS-ACCOUNT-ID}/config/
 ```
 
 Then - upload your `batch_transform_job_config.json` to the same S3 Bucket (Resource Bucket) with no prefix as well.
 
 ```bash
-aws s3 cp batch_transform_job_config.json s3://automl-ts-mlops-pipeline-resource-bucket-{YOUR-12DIGIT-AWS-ACCOUNT-ID}
+aws s3 cp batch_transform_job_config.json s3://automl-ts-mlops-pipeline-resource-bucket-{YOUR-12DIGIT-AWS-ACCOUNT-ID}/config/
 ```
 
 Now, You have to upload your on data.zip file to __raw/__ directory in the same bucket.
 
 ```bash
-aws s3 cp data.zip s3://automl-ts-mlops-pipeline-resource-bucket-{YOUR-12DIGIT-AWS-ACCOUNT-ID}/raw
+aws s3 cp data.zip s3://automl-ts-mlops-pipeline-resource-bucket-{YOUR-12DIGIT-AWS-ACCOUNT-ID}/raw/
 ```
 
 > You should upload `data.zip` as the final step because `raw/*.zip` is registered as the upload trigger key of the pipeline. Therefore the pipeline will be triggered immediately after `raw/data.zip` is uploaded.

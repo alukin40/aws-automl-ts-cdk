@@ -3,11 +3,13 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as sfn_tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
+//import * as fs from 'fs';
 
 import * as glue from "@aws-cdk/aws-glue-alpha";
 
 export interface GlueConstructProps {
     taskName: string,
+    glueName: string,
     pythonFilePath: string,
     resourceBucket: s3.Bucket,
     defaultArguments?: {
@@ -27,6 +29,10 @@ export class GlueConstruct extends Construct {
         
         const resourceBucketArn = props.resourceBucket.bucketArn;
         
+        // const configRaw = fs.readFileSync('cdk-config/cdk-config.json', 'utf8');
+        // const config = JSON.parse(configRaw);
+        // const baseConstructName = config.baseConstructName
+        
         // Define the policy statement allows Full Access to specified S3 bucket
         const s3BucketFullAccessPolicy = new iam.PolicyStatement({
           actions: ['s3:*'],
@@ -34,9 +40,9 @@ export class GlueConstruct extends Construct {
         });
         
         // IAM Role
-        this.role = new iam.Role(this, `${props.taskName}-Role`, {
+        this.role = new iam.Role(this, `${props.glueName}-Role`, {
             assumedBy: new iam.ServicePrincipal('glue.amazonaws.com'),
-            roleName: `${props.taskName}-Role`,
+            roleName: `${props.glueName}-Role`,
             managedPolicies: [
                 {managedPolicyArn: 'arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole'},
             ],
@@ -48,19 +54,19 @@ export class GlueConstruct extends Construct {
         });
         
         // Glue Python Job
-        const pythonJob = new glue.Job(this, `${props.taskName}-Python-Job`, {
+        const pythonJob = new glue.Job(this, `${props.glueName}-Python-Job`, {
             executable: glue.JobExecutable.pythonShell({
                glueVersion: glue.GlueVersion.V3_0,
                pythonVersion: glue.PythonVersion.THREE_NINE,
                script: glue.Code.fromAsset(props.pythonFilePath)
             }),
             role: this.role,
-            jobName: props.taskName,
+            jobName: props.glueName,
             defaultArguments: props.defaultArguments
         });
         
         // StepFunction Task
-        this.task = new sfn_tasks.GlueStartJobRun(this, `${props.taskName}-Task-Job`, {
+        this.task = new sfn_tasks.GlueStartJobRun(this, `${props.taskName}`, {
             glueJobName: pythonJob.jobName,
             integrationPattern: sfn.IntegrationPattern.RUN_JOB,
             resultPath: sfn.JsonPath.stringAt('$.result'),

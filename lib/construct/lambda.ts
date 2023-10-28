@@ -8,6 +8,7 @@ import * as cdk from 'aws-cdk-lib';
 
 export interface LambdaConstructProps {
     taskName: string;
+    lambdaName: string;
     lambdaCodePath: string;
     timeout: cdk.Duration;
     resourceBucket: s3.Bucket;
@@ -33,9 +34,9 @@ export class LambdaConstruct extends Construct {
         });
         
         // IAM Role
-        this.role = new iam.Role(this, `${props.taskName}-Lambda-Role`, {
+        this.role = new iam.Role(this, `${props.lambdaName}-Lambda-Role`, {
            assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-           roleName: `${props.taskName}-Lambda-Role`,
+           roleName: `${props.lambdaName}-Lambda-Role`,
            managedPolicies: [
                 {managedPolicyArn: 'arn:aws:iam::aws:policy/CloudWatchFullAccess'},
                 {managedPolicyArn: 'arn:aws:iam::aws:policy/AmazonSageMakerFullAccess'}
@@ -48,10 +49,10 @@ export class LambdaConstruct extends Construct {
         });
         
         // Lambda Function
-        this.lambda = new lambda.Function(this, `${props.taskName}-Lambda-Function`, {
+        this.lambda = new lambda.Function(this, `${props.lambdaName}-Lambda-Function`, {
             code: lambda.Code.fromAsset(props.lambdaCodePath),
             handler: 'index.handler',
-            functionName: props.taskName,
+            functionName: props.lambdaName,
             runtime: lambda.Runtime.PYTHON_3_11,
             timeout: props.timeout,
             role: this.role,
@@ -59,7 +60,7 @@ export class LambdaConstruct extends Construct {
         });
         
         // Define StepFunction task for this Lambda
-        this.task = new sfn_tasks.LambdaInvoke(this, `${props.taskName}-Lambda-Task`, {
+        this.task = new sfn_tasks.LambdaInvoke(this, `${props.taskName} Lambda Task`, {
             lambdaFunction: this.lambda,
             integrationPattern: sfn.IntegrationPattern.REQUEST_RESPONSE,
             resultPath: sfn.JsonPath.stringAt('$'),
