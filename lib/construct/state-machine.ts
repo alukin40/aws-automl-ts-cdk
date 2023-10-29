@@ -83,7 +83,7 @@ export class StateMachine extends Construct {
       resourceBucket: resourceBucket,
       defaultArguments: {
         "--bucket": props.resourceBucket.bucketName,
-        "--fileuri": "raw/data.zip",
+        "--prefix": "raw/",
       },
     });
     
@@ -200,8 +200,8 @@ export class StateMachine extends Construct {
     const trainTrigger = new TriggerConstruct(this, `${baseConstructName}-Train-Trigger`, {
         stateMachine: stateMachine,
         resourceBucket: resourceBucket,
-        s3Prefix: 'raw/',
-        s3Suffix: '.zip'
+        s3Prefix: 'raw/'
+        //s3Suffix: '.zip'
     });
   }
 }

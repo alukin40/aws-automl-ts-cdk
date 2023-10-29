@@ -36,9 +36,10 @@ def handler(event, context):
     max_payload_mb = transform_job_config['MaxPayloadInMB']
     
     # Start the SageMaker Batch Transform Job
-    testJobName = 'alukin-test-271023-3'
+    # testJobName = 'alukin-test-28102023-3'
     sm_response = sagemaker.create_transform_job(
         TransformJobName=transform_job_name, 
+        # TransformJobName=testJobName,
         ModelName=transform_model,
         TransformInput={
             'DataSource': {

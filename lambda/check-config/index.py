@@ -4,7 +4,7 @@ import os
 s3 = boto3.client('s3')
 
 def handler(event, context):
-
+    
     resource_bucket = os.environ['RESOURCE_BUCKET']
 
     files_to_check = [
@@ -20,7 +20,27 @@ def handler(event, context):
                 'config_status': 'FAILED',
                 'message': f'File {file_key} does not exist.'
             }
-
-    return {
-        'config_status': 'SUCCEEDED'
-    }
+    
+    # Check for .zip or .csv file in the S3 bucket with prefix raw/
+    response = s3.list_objects_v2(
+        Bucket=resource_bucket,
+        Prefix='raw/',
+        MaxKeys=100
+    )
+    
+    # Iterate over the returned objects and look for files with the desired extensions
+    if 'Contents' in response:
+        for obj in response['Contents']:
+            if obj['Key'].endswith('.zip') or obj['Key'].endswith('.csv'):
+                return {
+                    'config_status': 'SUCCEEDED'
+                }
+        return {
+            'config_status': 'FAILED',
+            'message': 'No .zip or .csv files found with the raw/ prefix.'
+        }
+    else:
+        return {
+            'config_status': 'FAILED',
+            'message': 'No .zip or .csv files found with the raw/ prefix.'
+        }

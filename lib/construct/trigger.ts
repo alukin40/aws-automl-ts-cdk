@@ -10,7 +10,7 @@ export interface TriggerConstructProps {
   stateMachine: sfn.StateMachine;
   resourceBucket: s3.Bucket;
   s3Prefix: string;
-  s3Suffix: string;
+  //s3Suffix: string;
 }
 
 export class TriggerConstruct extends Construct {
@@ -81,8 +81,8 @@ export class TriggerConstruct extends Construct {
             ],
             filters: [
                 {
-                    prefix: props.s3Prefix,
-                    suffix: props.s3Suffix
+                    prefix: props.s3Prefix
+                    //suffix: props.s3Suffix
                 }
             ]
         }

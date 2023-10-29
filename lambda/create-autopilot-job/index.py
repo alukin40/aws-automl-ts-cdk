@@ -55,10 +55,10 @@ def handler(event, context):
     )
     # response = {
     #     "AutoMLJobResponse": {
-    #         "AutoMLJobArn": "arn:aws:sagemaker:eu-west-1:912713455521:automl-job/automl-job-20231006T085134"
+    #         "AutoMLJobArn": "arn:aws:sagemaker:eu-west-1:912713455521:automl-job/automl-job-20231027T160711"
     #     }
     # }
-    # job_name = 'automl-job-20231006T085134'
+    # job_name = 'automl-job-20231027T160711'
 
     return {
         'AutoMLJobResponse': response,
