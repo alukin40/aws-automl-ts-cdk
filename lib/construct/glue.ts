@@ -3,7 +3,6 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as sfn_tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
-//import * as fs from 'fs';
 
 import * as glue from "@aws-cdk/aws-glue-alpha";
 
@@ -28,10 +27,6 @@ export class GlueConstruct extends Construct {
         super(scope, id);
         
         const resourceBucketArn = props.resourceBucket.bucketArn;
-        
-        // const configRaw = fs.readFileSync('cdk-config/cdk-config.json', 'utf8');
-        // const config = JSON.parse(configRaw);
-        // const baseConstructName = config.baseConstructName
         
         // Define the policy statement allows Full Access to specified S3 bucket
         const s3BucketFullAccessPolicy = new iam.PolicyStatement({

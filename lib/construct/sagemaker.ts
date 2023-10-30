@@ -35,7 +35,6 @@ export class SageMakerConstruct extends Construct {
         // Create a Step Functions task for creating AI model from the Best model trained by SageMaker Autopilot
         this.createModelTask = new sfn_tasks.SageMakerCreateModel(this, `${props.taskName} Task`, {
           modelName: sfn.JsonPath.stringAt('$.BestCandidate.CandidateName'),
-        //   modelName: 'alukin-test-28102023-3',
           primaryContainer: new sfn_tasks.ContainerDefinition({
             image: sfn_tasks.DockerImage.fromJsonExpression(sfn.JsonPath.stringAt('$.BestCandidate.InferenceContainer.Image')),
             mode: sfn_tasks.Mode.SINGLE_MODEL,

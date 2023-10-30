@@ -53,12 +53,6 @@ def handler(event, context):
         RoleArn=sagemaker_role,
         AutoMLProblemTypeConfig=automl_problem_config
     )
-    # response = {
-    #     "AutoMLJobResponse": {
-    #         "AutoMLJobArn": "arn:aws:sagemaker:eu-west-1:912713455521:automl-job/automl-job-20231027T160711"
-    #     }
-    # }
-    # job_name = 'automl-job-20231027T160711'
 
     return {
         'AutoMLJobResponse': response,

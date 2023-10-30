@@ -14,7 +14,6 @@ s3 = boto3.client('s3')
 def download_and_extract(bucket, prefix, csv_dir):
     # List objects in the given bucket with the provided prefix
     s3_objects = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)['Contents']
-    print(f"S3 objects to be checked: {s3_objects}")
     
     # Filter out possible filenames
     possible_filenames = ["data.zip", "tts.csv", "TTS.csv"]
@@ -27,7 +26,6 @@ def download_and_extract(bucket, prefix, csv_dir):
 
     # If none of the filenames matched, raise an error
     if not fileuri:
-        print(f"No matching file found in S3 bucket with prefix: {prefix}")
         exit()
 
     file_name = os.path.join('/tmp', os.path.basename(fileuri))
@@ -40,7 +38,6 @@ def download_and_extract(bucket, prefix, csv_dir):
         try:
             with zipfile.ZipFile(file_name, 'r') as zip_ref:
                 zip_ref.extractall(csv_dir)
-            print(f"ZIP to be processed as: {fileuri}")
             return "zip"
         except FileNotFoundError:
             print(f"{file_name} not found.")
@@ -50,7 +47,6 @@ def download_and_extract(bucket, prefix, csv_dir):
         destination = os.path.join(csv_dir, 'training_data.csv')
         os.makedirs(csv_dir, exist_ok=True)
         os.rename(source, destination)
-        print(f"CSV to be processed as: {destination}")
         return "csv"
     else:
         print(f"Unsupported file type for {file_name}")
@@ -79,14 +75,14 @@ def preprocess(csv_dir):
 
     # Scenario 2: TTS.csv is present along with one of RTS.csv OR metadata.csv
     elif tts_present and rts_present and not metadata_present:
-        final_data = pd.merge(tts_df, rts_df, how='right', on=['product_code', 'location_code', 'timestamp'])
+        final_data = pd.merge(tts_df, rts_df, how='right', on=['product_code', 'location_code', 'timestamp']) # Change the merge columns and type of Merge based on your dataset.
     elif tts_present and not rts_present and metadata_present:
-        final_data = pd.merge(tts_df, metadata_df, how='right', on=['product_code'])
+        final_data = pd.merge(tts_df, metadata_df, how='right', on=['product_code']) # Change the merge columns and type of Merge based on your dataset.
 
     # Scenario 3: All files are present
     elif tts_present and rts_present and metadata_present:
-        merged_data = pd.merge(tts_df, rts_df, how='right', on=['product_code', 'location_code', 'timestamp'])
-        final_data = pd.merge(merged_data, metadata_df, how='right', on=['product_code'])
+        merged_data = pd.merge(tts_df, rts_df, how='right', on=['product_code', 'location_code', 'timestamp']) # Change the merge columns and type of Merge based on your dataset.
+        final_data = pd.merge(merged_data, metadata_df, how='right', on=['product_code']) # Change the merge columns and type of Merge based on your dataset.
 
     # Error if no recognized pattern is present
     else:
@@ -102,7 +98,6 @@ def save_to_s3(bucket, csv_dir):
     single_csv = 'training_data.csv'
     object_key = os.path.join('input/', os.path.basename(single_csv))
     s3.upload_file(os.path.join(csv_dir, single_csv), bucket, object_key)
-    print(f"S3 file uploaded into: {object_key}")
 
 
 # Main Execution

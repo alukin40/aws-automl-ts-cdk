@@ -28,7 +28,6 @@ def handler(event, context):
         best_candidate_info = {
             'CandidateName': best_candidate["CandidateName"],
             'InferenceContainer': inference_container
-            #'InferenceContainerDefinitions': inference_output
         }
     else:
         best_candidate_info = "No Best Candidate ready yet."

@@ -115,12 +115,12 @@ export class StateMachine extends Construct {
     
     // Waiting 5m before checking Autopilot Job Status
     const wait5minAfterTraining = new sfn.Wait(this, `Wait 5 Min Training`, {
-        time: sfn.WaitTime.duration(cdk.Duration.seconds(5))
+        time: sfn.WaitTime.duration(cdk.Duration.minutes(5))
     });
     
     // Waiting 5m before checking Autopilot Job Status
     const wait5minAfterJob = new sfn.Wait(this, `Wait 5 Min Job`, {
-        time: sfn.WaitTime.duration(cdk.Duration.seconds(5))
+        time: sfn.WaitTime.duration(cdk.Duration.minutes(5))
     });
     
     // Create a model from the Best trained model from AutoML
@@ -155,7 +155,7 @@ export class StateMachine extends Construct {
     });
     
     // Finish State Machine if job failed
-    const jobFailed = new sfn.Fail(this, `${baseConstructName}-Job-Failed`, {
+    const jobFailed = new sfn.Fail(this, `Autopilot MLOps Pipeline Failed`, {
       cause: 'Autopilot MLOps Pipeline Job Failed',
       error: 'Autopilot Train Job returned FAILED',
     });
@@ -176,7 +176,6 @@ export class StateMachine extends Construct {
                               .next(wait5minAfterTraining)
                               .next(checkAutopilotJobStatus.task)
                               .next(new sfn.Choice(this, 'AutoML Job Complete?')
-                                  // Look at the Autopilot Job Status field
                                   .when(sfn.Condition.stringEquals('$.AutoMLJobStatus', 'InProgress'), wait5minAfterTraining)
                                   .when(sfn.Condition.stringEquals('$.AutoMLJobStatus', 'Completed'), bestModel.createModelTask
                                     .next(createTransformJob.task)
@@ -201,7 +200,6 @@ export class StateMachine extends Construct {
         stateMachine: stateMachine,
         resourceBucket: resourceBucket,
         s3Prefix: 'raw/'
-        //s3Suffix: '.zip'
     });
   }
 }

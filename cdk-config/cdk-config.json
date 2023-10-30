@@ -1,4 +1,4 @@
 {
-    "baseResourceBucket": "automl-ts-test-bucket-alukin-123",
-    "baseConstructName": "AutoML-TS-Test-123"
+    "baseResourceBucket": "automl-ts-mlops-pipeline-resource-bucket",
+    "baseConstructName": "AutoML-TS-MLOps"
 }
